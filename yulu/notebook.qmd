@@ -1,0 +1,1107 @@
+---
+title: Assignment
+jupyter: python3
+---
+
+Yulu is India's leading micro-mobility service provider, which offers unique vehicles for the daily commute. Starting off as a mission to eliminate traffic congestion in India, Yulu provides the safest commute solution through a user-friendly mobile app to enable shared, solo and sustainable commuting. Yulu zones are located at all the appropriate locations (including metro stations, bus stands, office spaces, residential areas, corporate offices, etc) to make those first and last miles smooth, affordable, and convenient.
+
+Yulu has recently suffered considerable dips in its revenues. They have contracted a consulting company to understand the factors on which the demand for these shared electric bicycles depends. Specifically, they want to understand the factors affecting the demand for these shared electric bicycles in the Indian market.
+
+The company wants to know:
+
+-   Which variables are significant in predicting the demand for shared electric bicycles in the Indian market?
+-   How well do those variables describe the electric bicycle demand.
+
+## Data Description
+
+The file `bike_sharing.csv` contains the usage data aggregated by the hour with the following columns:
+
+-   `datetime` - beginning of an hour for which the data are aggregated;
+-   `season`
+    -   1: spring,
+    -   2: summer,
+    -   3: fall,
+    -   4: winter;
+-   `holiday` - whether a day is a holiday or not
+-   `workingday` - if a day is neither weekend nor holiday is 1, otherwise is 0.
+-   `weather`
+    -   1: clear, few clouds, scattered clouds
+    -   2: mist + cloudy, mist + scattered clouds, mist + few clouds, mist
+    -   3: light snow, light rain + thunderstorm + scattered clouds, light rain + scattered clouds
+    -   4: heavy rain + ice pallets + thunderstorm + mist, snow + fog
+-   `temp` - air temperature in degrees Celsius
+-   `atemp` - feeling temperature in degrees Celsius
+-   `humidity` - air humidity in percent
+-   `windspeed` - wind speed in km/h
+-   `casual` - number of bikes rented by casual users
+-   `registered` - number of bikes rented by registered users
+-   `count` - total number of rented bikes including both casual and registered users
+
+## Practicalities
+
+Analyze the provided data and provide insights to the best of your abilities. Use statistical tests to support your claims. Include the relevant tables/graphs/visualization to explain what you have learned about the market. Make sure that the solution reflects your entire thought process including the preparation of data - it is more important how the code is structured rather than just the final result or plot.
+
+### Imports
+
+```{python}
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt
+import seaborn as sns
+import datetime as dt
+import scipy.stats as spy
+```
+
+```{python}
+df = pd.read_csv(r"https://d2beiqkhq929f0.cloudfront.net/public_assets/assets/000/001/428/original/bike_sharing.csv?1642089089")
+```
+
+```{python}
+df.head(5)
+```
+
+```{python}
+df.shape
+```
+
+```{python}
+df.dtypes
+```
+
+### Data Preparation and Cleaning
+
+```{python}
+df.isna().sum()
+```
+
+```{python}
+# Convert to datetime data type
+df['datetime'] = pd.to_datetime(df['datetime'])
+```
+
+```{python}
+min_datetime = df['datetime'].min()
+max_datetime = df['datetime'].max()
+
+print("Minimum Date and Time:", min_datetime)
+print("Maximum Date and Time:", max_datetime)
+```
+
+```{python}
+# Extract year, month, day, and hour
+df['year'] = df['datetime'].dt.year
+df['month'] = df['datetime'].dt.month
+df['day'] = df['datetime'].dt.day
+df['hour'] = df['datetime'].dt.hour
+
+# Now, you have the 'year', 'month', 'day', and 'hour' columns in your DataFrame
+print(df[['year', 'month', 'day', 'hour']])
+```
+
+## EDA
+
+#### Univariate Analysis
+
+-   Binary
+    -   `holiday`
+    -   `workingday`
+-   Nominal
+-   Ordinal
+    -   `season`
+    -   `weather`
+-   Continuous
+    -   `temp`
+    -   `atemp`
+    -   `humidity`
+    -   `windspeed`
+-   Discrete
+    -   `casual`
+    -   `registered`
+    -   `count`
+
+```{python}
+statistics = df[['season', 'holiday', 'workingday', 'weather', 'temp', 'atemp', 'humidity', 'windspeed', 'casual', 'registered', 'count']].describe()
+
+print(statistics)
+```
+
+```{python}
+df.head(5)
+```
+
+#### Count
+
+```{python}
+df.set_index('datetime', inplace=True)
+```
+
+##### Total Count
+
+###### Quarterly Average count of rented bikes
+
+```{python}
+# Group data by quarter and calculate the average count of rented bikes for each quarter
+quarterly_avg_counts = df.resample('Q')['count'].mean()
+
+# Create a line plot to visualize quarterly trends
+plt.figure(figsize=(12, 6))
+plt.plot(quarterly_avg_counts.index, quarterly_avg_counts, color='salmon', label='Quarterly Average Count')
+plt.title('Quarterly Bike Usage Trends')
+plt.xlabel('Quarter')
+plt.ylabel('Average Count')
+plt.legend()
+plt.xticks(rotation=45)
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+```
+
+###### Monthly Average count of rented bikes
+
+```{python}
+# Group data by month and calculate the average count of rented bikes for each month
+monthly_avg_counts = df.resample('M')['count'].mean()
+
+# Create a line plot to visualize monthly trends
+plt.figure(figsize=(12, 6))
+plt.plot(monthly_avg_counts.index, monthly_avg_counts, color='skyblue', label='Monthly Average Count')
+plt.title('Monthly Bike Usage Trends')
+plt.xlabel('Month')
+plt.ylabel('Average Count')
+plt.legend()
+plt.xticks(rotation=45)
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+```
+
+###### Percentage change between same months in 2011 and 2012
+
+```{python}
+# Filter data for the year 2011 and 2012 separately
+df_2011 = df[df['year'] == 2011]
+df_2012 = df[df['year'] == 2012]
+
+# Group data by month and calculate total counts for each year
+monthly_counts_2011 = df_2011.groupby('month')['count'].sum()
+monthly_counts_2012 = df_2012.groupby('month')['count'].sum()
+
+# Calculate the percent change between the same months in 2011 and 2012
+percent_change = ((monthly_counts_2012 - monthly_counts_2011) / monthly_counts_2011) * 100
+
+# Create a DataFrame to display the results
+comparison_df = pd.DataFrame({
+    'Month': percent_change.index,
+    'Percent Change': percent_change
+})
+
+# Display the DataFrame
+print(comparison_df)
+```
+
+```{python}
+# Plotting a line chart
+plt.figure(figsize=(10, 6))
+plt.plot(comparison_df['Month'], comparison_df['Percent Change'], marker='o', color='green', linestyle='-')
+plt.title('Percent Change in Bike Rentals (2012 vs. 2011)')
+plt.xlabel('Month')
+plt.ylabel('Percent Change')
+plt.xticks(comparison_df['Month'])
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.show()
+```
+
+###### Total number of rented bikes over time
+
+```{python}
+plt.figure(figsize=(12, 6))
+plt.plot(df.resample('D').sum().index, df.resample('D').sum()['count'], color='green', label='Total Rentals')  # Assuming 'df' is your DataFrame and it's resampled by day
+plt.title('Total Number of Rented Bikes Over Time')
+plt.xlabel('Date')
+plt.ylabel('Count')
+plt.legend()
+plt.xticks(rotation=45)
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+```
+
+###### Hourly Bike Usage
+
+```{python}
+# Group data by hour of the day and calculate the average count of rented bikes for each hour
+hourly_avg_counts = df.groupby(df.index.hour)['count'].mean()
+
+# Create a line plot to visualize hourly usage patterns
+plt.figure(figsize=(12, 6))
+plt.plot(hourly_avg_counts.index, hourly_avg_counts, color='skyblue', marker='o', linestyle='-', label='Hourly Average Count')
+plt.title('Hourly Bike Usage Patterns')
+plt.xlabel('Hour of the Day')
+plt.ylabel('Average Count')
+plt.xticks(range(24))
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Assuming you have a DataFrame called 'df' with a 'hour' column and 'year' column
+# First, create a function to categorize hours into parts of the day
+def categorize_hour(hour):
+    if 5 <= hour < 12:  # Morning: 5 AM to 11:59 AM
+        return "Morning"
+    elif 12 <= hour < 17:  # Midday: 12 PM to 4:59 PM
+        return "Midday"
+    elif 17 <= hour < 21:  # Evening: 5 PM to 8:59 PM
+        return "Evening"
+    else:  # Night: 9 PM to 4:59 AM
+        return "Night"
+
+# Apply the categorize_hour function to create a new column 'day_part'
+df['day_part'] = df['hour'].apply(categorize_hour)
+
+# Filter the DataFrame for the year 2012
+df_2012 = df[df['year'] == 2012]
+
+# Create a custom order for day parts
+day_part_order = ["Morning", "Midday", "Evening", "Night"]
+
+# Group the data by 'day_part' and calculate the mean demand for each part of the day
+hourly_avg_by_day_part = df_2012.groupby('day_part')['count'].mean().loc[day_part_order]
+
+# Set up the matplotlib figure
+plt.figure(figsize=(10, 6))
+
+# Plotting
+sns.lineplot(x=hourly_avg_by_day_part.index, y=hourly_avg_by_day_part.values, palette="viridis")
+plt.xlabel('Part of the Day')
+plt.ylabel('Average Demand')
+plt.title('Hourly Demand Patterns by Part of the Day (Year 2012)')
+
+# Show the plot
+plt.show()
+```
+
+```{python}
+# Group the data by 'day_part' and calculate the mean demand for each part of the day
+hourly_avg_by_day_part = df_2012.groupby('day_part')['count'].mean().loc[day_part_order]
+hourly_avg_casual_by_day_part = df_2012.groupby('day_part')['casual'].mean().loc[day_part_order]
+hourly_avg_registered_by_day_part = df_2012.groupby('day_part')['registered'].mean().loc[day_part_order]
+
+# Set up the matplotlib figure
+plt.figure(figsize=(12, 8))
+
+# Plotting
+sns.lineplot(x=hourly_avg_by_day_part.index, y=hourly_avg_by_day_part.values, label='Total Demand', palette="viridis")
+sns.lineplot(x=hourly_avg_casual_by_day_part.index, y=hourly_avg_casual_by_day_part.values, label='Casual Users', palette="magma")
+sns.lineplot(x=hourly_avg_registered_by_day_part.index, y=hourly_avg_registered_by_day_part.values, label='Registered Users', palette="plasma")
+
+plt.xlabel('Part of the Day')
+plt.ylabel('Average Demand')
+plt.title('Hourly Demand Patterns by Part of the Day (Year 2012)')
+plt.legend()
+
+# Show the plot
+plt.show()
+```
+
+###### Hourly Bike Usage by Season
+
+```{python}
+import matplotlib.pyplot as plt
+import seaborn as sns
+import itertools
+
+# Assuming df['season'], df['year'], and df['hour'] have been defined as in your setup
+
+# Group data by year, season, and hour, and calculate the average count of rented bikes
+hourly_avg_counts = df.groupby(['year', 'season', 'hour'])['count'].mean().unstack(level='year')
+
+# Set up the matplotlib figure
+plt.figure(figsize=(12, 6))
+
+# Set seaborn style
+sns.set_style("whitegrid")
+
+# Define markers and line styles for different years
+markers = ['o', 'v', '^', '<', '>', 's', 'p', '*', '+', 'x']
+line_styles = ['-', '--', '-.', ':']
+
+# Define colors for different seasons
+season_colors = {'Winter': 'blue', 'Spring': 'green', 'Summer': 'orange', 'Fall': 'red'}
+seasons_dict = {1: 'Winter', 2: 'Spring', 3: 'Summer', 4: 'Fall'}
+
+# Plot data for each season with different colors for each season and markers for each year
+for season in seasons_dict.keys():
+    for i, year in enumerate(sorted(hourly_avg_counts.columns)):
+        plt.plot(hourly_avg_counts.loc[season, year], 
+                 color=season_colors[seasons_dict[season]],
+                 marker=markers[i % len(markers)], 
+                 linestyle=line_styles[i % len(line_styles)], 
+                 label=f'Year {year} - {seasons_dict[season]}')
+
+# Add title, labels, legend, and grid
+plt.title('Hourly Bike Usage Patterns by Season and Year')
+plt.xlabel('Hour of the Day')
+plt.ylabel('Average Count')
+plt.legend(loc='upper left', bbox_to_anchor=(1.05, 1), title='Year - Season', ncol=2)
+plt.grid(True)
+
+# Adjust layout
+plt.tight_layout(rect=[0, 0, 0.85, 1])  # Adjust the rect to make space for the legend
+
+# Show the plot
+plt.show()
+
+```
+
+```{python}
+df.columns
+```
+
+```{python}
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Filter the DataFrame for the year 2012
+df_2012 = df[df['year'] == 2012]
+
+# Group data by season and hour for 2012, and calculate the average count of rented bikes
+hourly_avg_counts_2012 = df_2012.groupby(['season', 'hour'])['count'].mean().unstack(level='season')
+
+# Set up the matplotlib figure
+plt.figure(figsize=(12, 6))
+
+# Set seaborn style
+sns.set_style("whitegrid")
+
+# Define colors for different seasons
+season_colors = {'Winter': 'blue', 'Spring': 'green', 'Summer': 'orange', 'Fall': 'red'}
+seasons_dict = {1: 'Winter', 2: 'Spring', 3: 'Summer', 4: 'Fall'}
+
+# Plot data for each season with different colors
+for season in seasons_dict.keys():
+    plt.plot(hourly_avg_counts_2012[season], 
+             color=season_colors[seasons_dict[season]],
+             label=seasons_dict[season])
+
+# Add title, labels, legend, and grid
+plt.title('Hourly Bike Usage Patterns by Season for the Year 2012')
+plt.xlabel('Hour of the Day')
+plt.ylabel('Average Count')
+plt.legend(title='Season')
+plt.grid(True)
+
+# Show the plot
+plt.show()
+
+```
+
+```{python}
+hourly_avg_casual = df.groupby(df.index.hour)['casual'].mean()
+hourly_avg_registered = df.groupby(df.index.hour)['registered'].mean()
+
+# Create a line plot to visualize hourly usage patterns for casual and registered users
+plt.figure(figsize=(12, 6))
+plt.plot(hourly_avg_casual.index, hourly_avg_casual, color='skyblue', marker='o', linestyle='-', label='Hourly Average Count (Casual)')
+plt.plot(hourly_avg_registered.index, hourly_avg_registered, color='salmon', marker='o', linestyle='-', label='Hourly Average Count (Registered)')
+plt.title('Hourly Bike Usage Patterns for Casual and Registered Users')
+plt.xlabel('Hour of the Day')
+plt.ylabel('Average Count')
+plt.xticks(range(24))
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Create a new column for day of the week (0=Monday, 6=Sunday)
+df['day_of_week'] = df.index.dayofweek
+
+# Classify as 'Weekday' or 'Weekend'
+df['day_type'] = df['day_of_week'].apply(lambda x: 'Weekend' if x >= 5 else 'Weekday')
+
+hourly_data = df.groupby(['day_type', df.index.hour])[['casual', 'registered']].mean().reset_index()
+
+# Set the aesthetic style of the plots
+sns.set_style("whitegrid")
+
+# Plot for Weekdays
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=hourly_data[hourly_data['day_type'] == 'Weekday'], x='datetime', y='casual', label='Casual', color='blue')
+sns.lineplot(data=hourly_data[hourly_data['day_type'] == 'Weekday'], x='datetime', y='registered', label='Registered', color='green')
+plt.title('Hourly Bike Usage Patterns - Weekdays')
+plt.xlabel('Hour of the Day')
+plt.ylabel('Average Count')
+plt.legend()
+plt.show()
+
+# Plot for Weekends
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=hourly_data[hourly_data['day_type'] == 'Weekend'], x='datetime', y='casual', label='Casual', color='blue')
+sns.lineplot(data=hourly_data[hourly_data['day_type'] == 'Weekend'], x='datetime', y='registered', label='Registered', color='green')
+plt.title('Hourly Bike Usage Patterns - Weekends')
+plt.xlabel('Hour of the Day')
+plt.ylabel('Average Count')
+plt.legend()
+plt.show()
+```
+
+```{python}
+# Group by holiday status and hour, then calculate the mean
+holiday_hourly = df[df['holiday'] == 1].groupby('hour')['casual', 'registered'].mean()
+non_holiday_hourly = df[df['holiday'] == 0].groupby('hour')['casual', 'registered'].mean()
+
+# Set the aesthetic style of the plots
+sns.set_style("whitegrid")
+
+# Plot for Holidays
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=holiday_hourly, x=holiday_hourly.index, y='casual', label='Casual - Holiday', color='blue')
+sns.lineplot(data=holiday_hourly, x=holiday_hourly.index, y='registered', label='Registered - Holiday', color='green')
+plt.title('Hourly Bike Usage Patterns - Holidays')
+plt.xlabel('Hour of the Day')
+plt.ylabel('Average Count')
+plt.legend()
+plt.show()
+
+# Plot for Non-Holidays
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=non_holiday_hourly, x=non_holiday_hourly.index, y='casual', label='Casual - Non-Holiday', color='blue')
+sns.lineplot(data=non_holiday_hourly, x=non_holiday_hourly.index, y='registered', label='Registered - Non-Holiday', color='green')
+plt.title('Hourly Bike Usage Patterns - Non-Holidays')
+plt.xlabel('Hour of the Day')
+plt.ylabel('Average Count')
+plt.legend()
+plt.show()
+```
+
+##### Count - Casual Vs. Registered
+
+###### Daily Sum of Casual and Registered
+
+```{python}
+# Calculate the daily sum of the 'casual' and 'registered' variables
+daily_casual = df.resample('D').sum()['casual']
+daily_registered = df.resample('D').sum()['registered']
+
+# Create line plots for 'casual' and 'registered' rentals over time
+plt.figure(figsize=(12, 6))
+plt.plot(daily_casual.index, daily_casual, color='skyblue', label='Casual Rentals')
+plt.plot(daily_registered.index, daily_registered, color='salmon', label='Registered Rentals')
+plt.title('Casual and Registered Bike Rentals Over Time')
+plt.xlabel('Date')
+plt.ylabel('Count')
+plt.legend()
+plt.xticks(rotation=45)
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+```
+
+###### Monthly average counts of Casual and Registered
+
+```{python}
+# Group data by month and calculate the average counts of casual and registered rentals for each month
+monthly_avg_casual_counts = df.resample('M')['casual'].mean()
+monthly_avg_registered_counts = df.resample('M')['registered'].mean()
+
+# Create a line plot to visualize monthly trends for casual and registered rentals
+plt.figure(figsize=(12, 6))
+plt.plot(monthly_avg_casual_counts.index, monthly_avg_casual_counts, color='skyblue', label='Monthly Average Casual Count')
+plt.plot(monthly_avg_registered_counts.index, monthly_avg_registered_counts, color='salmon', label='Monthly Average Registered Count')
+plt.title('Monthly Bike Usage Trends for Casual and Registered Rentals')
+plt.xlabel('Month')
+plt.ylabel('Average Count')
+plt.legend()
+plt.xticks(rotation=45)
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+```
+
+###### Year over year change for Casual and Regular
+
+```{python}
+# Group data by month and calculate total counts for each year for casual and registered rentals
+monthly_casual_counts_2011 = df_2011.groupby('month')['casual'].sum()
+monthly_registered_counts_2011 = df_2011.groupby('month')['registered'].sum()
+
+monthly_casual_counts_2012 = df_2012.groupby('month')['casual'].sum()
+monthly_registered_counts_2012 = df_2012.groupby('month')['registered'].sum()
+
+# Calculate the percent change between the same months in 2011 and 2012 for casual and registered rentals
+casual_percent_change = ((monthly_casual_counts_2012 - monthly_casual_counts_2011) / monthly_casual_counts_2011) * 100
+registered_percent_change = ((monthly_registered_counts_2012 - monthly_registered_counts_2011) / monthly_registered_counts_2011) * 100
+
+# Create DataFrames to display the results
+casual_comparison_df = pd.DataFrame({
+    'Month': casual_percent_change.index,
+    'Casual Percent Change': casual_percent_change
+})
+
+registered_comparison_df = pd.DataFrame({
+    'Month': registered_percent_change.index,
+    'Registered Percent Change': registered_percent_change
+})
+
+# Display the DataFrames
+print("Casual Rentals:")
+print(casual_comparison_df)
+print("\nRegistered Rentals:")
+print(registered_comparison_df)
+```
+
+###### Graph of YoY change for casual and registered
+
+```{python}
+# Year-over-year Percent Change
+plt.figure(figsize=(12, 6))
+plt.plot(casual_comparison_df['Month'], casual_comparison_df['Casual Percent Change'], color='skyblue', label='Casual Rentals')
+plt.plot(registered_comparison_df['Month'], registered_comparison_df['Registered Percent Change'], color='salmon', label='Registered Rentals')
+plt.title('Percentage Change in Casual and Registered Rentals Over Months (2011-2012)')
+plt.xlabel('Month')
+plt.ylabel('Percent Change')
+plt.legend()
+plt.xticks(rotation=45)
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
+```
+
+#### Weekday
+
+##### Weekday Vs. Weekend
+
+```{python}
+# Group data by day of the week and calculate the average count of rented bikes for each day
+day_of_week = df.index.dayofweek
+
+# Create a new column 'Weekday' to indicate whether each day is a weekday (1) or weekend (0)
+df['Weekday'] = (day_of_week < 5).astype(int)
+
+# Group data by weekdays and weekends and calculate the average counts
+avg_counts_weekdays = df[df['Weekday'] == 1]['count'].mean()
+avg_counts_weekends = df[df['Weekday'] == 0]['count'].mean()
+
+# Create a bar chart to visualize bike rentals on weekdays vs. weekends
+plt.figure(figsize=(8, 6))
+plt.bar(['Weekdays', 'Weekends'], [avg_counts_weekdays, avg_counts_weekends], color=['skyblue', 'salmon'])
+plt.title('Average Bike Rentals on Weekdays vs. Weekends')
+plt.xlabel('Day Type')
+plt.ylabel('Average Count')
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+
+
+```
+
+##### Average counts for Avg casual weekeday
+
+```{python}
+# Group data by weekdays and weekends and calculate the average counts for casual and registered rentals
+avg_casual_weekdays = df[(df['Weekday'] == 1)]['casual'].mean()
+avg_registered_weekdays = df[(df['Weekday'] == 1)]['registered'].mean()
+
+avg_casual_weekends = df[(df['Weekday'] == 0)]['casual'].mean()
+avg_registered_weekends = df[(df['Weekday'] == 0)]['registered'].mean()
+
+# Create a bar chart to visualize casual and registered bike rentals on weekdays vs. weekends
+plt.figure(figsize=(10, 6))
+bar_width = 0.35
+index = ['Weekdays', 'Weekends']
+
+plt.bar(index, [avg_casual_weekdays, avg_casual_weekends], bar_width, label='Casual', color='skyblue')
+plt.bar(index, [avg_registered_weekdays, avg_registered_weekends], bar_width, label='Registered', color='salmon', bottom=[avg_casual_weekdays, avg_casual_weekends])
+
+plt.title('Average Bike Rentals (Casual vs. Registered) on Weekdays vs. Weekends')
+plt.xlabel('Day Type')
+plt.ylabel('Average Count')
+plt.legend()
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+```
+
+#### Holiday, Working Days
+
+```{python}
+# Group the data by 'holiday' and 'workingday' and calculate the sum of 'count'
+rentals_by_holiday = df.groupby('holiday')['count'].sum()
+rentals_by_workingday = df.groupby('workingday')['count'].sum()
+
+# Create a bar chart to compare total rentals on holidays vs. non-holidays
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 2, 1)
+rentals_by_holiday.plot(kind='bar', rot=0)
+plt.title('Total Rentals on Holidays vs. Non-Holidays')
+plt.xlabel('Holiday (0: Non-Holiday, 1: Holiday)')
+plt.ylabel('Total Rentals')
+
+# Create a bar chart to compare total rentals on working days vs. non-working days
+plt.subplot(1, 2, 2)
+rentals_by_workingday.plot(kind='bar', rot=0)
+plt.title('Total Rentals on Working Days vs. Non-Working Days')
+plt.xlabel('Working Day (0: Non-Working Day, 1: Working Day)')
+plt.ylabel('Total Rentals')
+
+plt.tight_layout()
+plt.show()
+```
+
+#### Season, Weather
+
+-   `season`
+    -   1: spring,
+    -   2: summer,
+    -   3: fall,
+    -   4: winter;
+-   `weather`
+    -   1: clear, few clouds, scattered clouds
+    -   2: mist + cloudy, mist + scattered clouds, mist + few clouds, mist
+    -   3: light snow, light rain + thunderstorm + scattered clouds, light rain + scattered clouds
+    -   4: heavy rain + ice pallets + thunderstorm + mist, snow + fog
+
+```{python}
+df.head(5)
+```
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Since 'datetime' is the index, we can directly use it in the resample method
+# We also don't need to extract it explicitly
+
+# Create line graphs for bike rentals over time for each season
+plt.figure(figsize=(12, 6))
+sns.set_style("whitegrid")
+
+# Group data by 'season' and calculate the sum of 'count' for each season
+# We use the name of the index 'datetime' in the Grouper if it's not a column
+season_grouped = df.groupby(['season', pd.Grouper(freq='M')])['count'].sum().reset_index()
+
+# Plot the line graphs for each season
+for season in season_grouped['season'].unique():
+    season_subset = season_grouped[season_grouped['season'] == season]
+    # Since 'datetime' is the index, we need to use the reset index to access it
+    plt.plot(season_subset['datetime'], season_subset['count'], label=f'Season {season}')
+
+plt.title('Bike Rentals Over Time for Each Season')
+plt.xlabel('Date')
+plt.ylabel('Total Rentals')
+plt.legend()
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Create line graphs for bike rentals over time for each weather condition
+plt.figure(figsize=(12, 6))
+
+# Group data by 'weather' and calculate the sum of 'count' for each weather condition
+weather_grouped = df.groupby(['weather', pd.Grouper(freq='M')])['count'].sum().reset_index()
+
+# Plot the line graphs for each weather condition
+for weather_condition in weather_grouped['weather'].unique():
+    weather_subset = weather_grouped[weather_grouped['weather'] == weather_condition]
+    plt.plot(weather_subset['datetime'], weather_subset['count'], label=f'Weather {weather_condition}')
+
+plt.title('Bike Rentals Over Time for Each Weather Condition')
+plt.xlabel('Date')
+plt.ylabel('Total Rentals')
+plt.legend()
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+weather_counts = df['weather'].value_counts().sort_index()
+weather_labels = ['Clear', 'Mist', 'Light Rain', 'Heavy Rain']
+plt.figure(figsize=(8, 6))
+plt.bar(weather_labels, weather_counts, color='skyblue')
+plt.title('Bike Rentals by Weather Condition')
+plt.xlabel('Weather Condition')
+plt.ylabel('Count')
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+```
+
+#### Temp, Atemp, Humidity, Windspeed
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Assuming you have already loaded your dataset into a DataFrame called 'df'
+
+# Extract the columns of interest for analysis
+variables_of_interest = ['temp', 'atemp', 'humidity', 'windspeed']
+
+# Create subplots for histograms
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 8))
+fig.suptitle('Distribution of Temperature, Feel Temperature, Humidity, and Windspeed')
+
+# Plot histograms for each variable
+for i, variable in enumerate(variables_of_interest):
+    row = i // 2
+    col = i % 2
+    ax = axes[row, col]
+    
+    ax.hist(df[variable], bins=20, color='skyblue', edgecolor='black')
+    ax.set_title(f'Distribution of {variable}')
+    ax.set_xlabel(variable)
+    ax.set_ylabel('Frequency')
+
+# Adjust layout and show the histograms
+plt.tight_layout()
+plt.subplots_adjust(top=0.9)
+plt.show()
+```
+
+```{python}
+
+# Create a figure for the overlaid histograms
+plt.figure(figsize=(12, 8))
+plt.title('Overlayed Histograms of Temperature, Feel Temperature, Humidity, and Windspeed')
+
+# Set colors for each variable
+colors = ['skyblue', 'salmon', 'lightgreen', 'lightcoral']
+
+# Plot histograms for each variable with different colors and transparency
+for i, variable in enumerate(variables_of_interest):
+    if variable == 'windspeed':
+        plt.hist(df[variable], bins=20, color='grey', alpha=0.7, label=variable, edgecolor='black')
+    else:
+        plt.hist(df[variable], bins=20, color=colors[i], alpha=0.7, label=variable, edgecolor='black')
+
+# Add labels and legend
+plt.xlabel('Value')
+plt.ylabel('Frequency')
+plt.legend()
+
+# Show the overlaid histograms
+plt.tight_layout()
+plt.show()
+
+```
+
+```{python}
+# Create temperature bins (e.g., cold, moderate, hot)
+temperature_bins = [-10, 10, 25, 50]  # Define temperature ranges for the bins
+temperature_labels = ['Cold', 'Moderate', 'Hot']
+df['temperature_bin'] = pd.cut(df['temp'], bins=temperature_bins, labels=temperature_labels)
+
+# Create a bar chart to visualize bike rentals by temperature bin
+temperature_counts = df['temperature_bin'].value_counts().sort_index()
+plt.figure(figsize=(8, 6))
+plt.bar(temperature_labels, temperature_counts, color='salmon')
+plt.title('Bike Rentals by Temperature Bin')
+plt.xlabel('Temperature Bin')
+plt.ylabel('Count')
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+# Regression plot for 'temp' vs 'count'
+sns.regplot(data=df, x='temp', y='count', line_kws={"color":"red","alpha":0.7,"lw":5})
+plt.title('Temperature vs. Bike Rental Count')
+plt.show()
+```
+
+```{python}
+df['Weekend'] = df.index.dayofweek // 5
+df = df.drop(['temperature_bin', 'avg_temperature'], axis=1)
+```
+
+```{python}
+# Pair plot for selected variables
+sns.pairplot(data=df, vars=['temp', 'atemp', 'humidity', 'windspeed', 'count'])
+plt.show()
+```
+
+```{python}
+correlation_matrix = df.corr()
+
+# Create a heatmap to visualize the correlations
+plt.figure(figsize=(12, 8))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f", linewidths=0.5)
+plt.title('Correlation Heatmap')
+plt.show()
+```
+
+```{python}
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+```
+
+1.  Strong Positive Correlations:
+
+    -   `atemp` and `temp` have a near-perfect correlation (0.984948), indicating that these two temperature readings are almost interchangeable in this dataset.
+    -   `season` and `month` are also highly correlated (0.974737), which makes sense since seasons are a division of the year.
+    -   `registered` and `count` show a very high correlation (0.970948), suggesting that the majority of bike rentals are by registered users rather than casual ones.
+    -   `Weekday` and `workingday` are strongly correlated (0.934780), which likely indicates that `workingday` is derived from `Weekday`.
+
+2.  Moderate to High Positive Correlations:
+
+    -   The number of casual rentals has a significant but lesser correlation with `count` (0.690414) than registered rentals, indicating that casual rentals contribute to the total but are not the primary factor.
+    -   `registered` and `casual` show a moderate correlation (0.497250), meaning there is some relationship but not as strong, suggesting independent factors may affect these user types.
+    -   There's a moderate correlation between temperature (`temp`, `atemp`) and `casual` rentals (around 0.46), implying that warmer temperatures might lead to an increase in casual users renting bikes.
+
+3.  Weather and Environmental Factors:
+
+    -   `weather` and `humidity` have a positive correlation (0.406244), suggesting that adverse weather conditions are often associated with higher humidity levels.
+    -   `hour` and `count` have a moderate correlation (0.400601), which indicates that there are certain hours of the day that have consistently higher rental counts.
+
+4.  Low Positive Correlations:
+
+    -   Variables such as `temp`, `atemp`, `registered`, `hour`, `month`, `season`, `windspeed`, `year`, etc., have lower correlations with `count` ranging from 0.1 to 0.4. These correlations, while positive, are less pronounced, meaning these factors have some influence on rental counts, but it's not as significant.
+
+5.  Negative Correlations:
+
+    -   `holiday` has a small negative correlation with `count` (-0.005393), suggesting a slight decrease in rentals on holidays.
+    -   `weather` has a negative correlation with `count` (-0.128655), indicating that as weather conditions worsen (weather values increase), bike rentals decrease.
+    -   `humidity` shows a negative correlation with `count` (-0.317371), implying that higher humidity levels might deter bike rentals.
+
+6.  Strong Negative Correlations:
+
+    -   `humidity` is negatively correlated with `registered` (-0.265458) and `casual` (-0.348187) rentals. This suggests that as humidity increases, the number of both registered and casual rentals decreases.
+    -   `workingday` and `casual` have a strong negative correlation (-0.319111), indicating casual rentals are significantly lower on working days.
+
+7.  Insignificant or Very Low Correlations:
+
+    -   Variables such as `day`, `weather`, `workingday`, `holiday`, and various interactions with `year` show very low to negligible correlations (close to 0), suggesting no strong linear relationship with bike rental counts.
+
+```{python}
+from scipy import stats
+
+# Define two groups: holiday and non-holiday
+holiday_counts = df[df['holiday'] == 1]['count']
+non_holiday_counts = df[df['holiday'] == 0]['count']
+
+# Perform a t-test
+t_statistic, p_value = stats.ttest_ind(holiday_counts, non_holiday_counts)
+
+# Check if the p-value is less than the significance level (e.g., 0.05)
+alpha = 0.05
+if p_value < alpha:
+    print("There is a significant difference in bike sharing counts between holidays and non-holidays.")
+else:
+    print("There is no significant difference in bike sharing counts between holidays and non-holidays.")
+```
+
+```{python}
+from scipy import stats
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+
+# Create a model for ANOVA
+model = ols('count ~ season', data=df).fit()
+
+# Perform ANOVA
+anova_table = sm.stats.anova_lm(model, typ=2)
+
+# Extract the p-value from the ANOVA results
+p_value = anova_table['PR(>F)'][0]
+
+# Check if the p-value is less than the significance level (e.g., 0.05)
+alpha = 0.05
+if p_value < alpha:
+    print("There is a significant difference in bike sharing counts across different seasons.")
+else:
+    print("There is no significant difference in bike sharing counts across different seasons.")
+```
+
+```{python}
+df.columns
+```
+
+```{python}
+from sklearn.model_selection import train_test_split
+
+# Feature selection - choose relevant features for prediction
+selected_features = ['temp', 'atemp', 'humidity', 'windspeed', 'season', 'hour', 'Weekday', 'weather']
+
+X = df[selected_features]
+y = df['count']
+
+# Split the dataset into training and testing sets (e.g., 80% training, 20% testing)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+```
+
+```{python}
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
+# Create and fit a linear regression model
+lr_model = LinearRegression()
+lr_model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = lr_model.predict(X_test)
+
+# Evaluate the model
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print(f'Mean Squared Error: {mse}')
+print(f'R-squared (R2): {r2}')
+
+# Analyze residuals (to check for patterns or biases)
+residuals = y_test - y_pred
+plt.scatter(y_pred, residuals)
+plt.xlabel('Predicted Values')
+plt.ylabel('Residuals')
+plt.title('Residual Plot')
+plt.axhline(y=0, color='r', linestyle='--')
+plt.show()
+```
+
+```{python}
+from sklearn.ensemble import RandomForestRegressor
+
+# Create and fit a random forest model
+rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+
+# Make predictions
+y_pred_rf = rf_model.predict(X_test)
+
+# Evaluate the model
+mse_rf = mean_squared_error(y_test, y_pred_rf)
+r2_rf = r2_score(y_test, y_pred_rf)
+
+print(f'Mean Squared Error (Random Forest): {mse_rf}')
+print(f'R-squared (R2) (Random Forest): {r2_rf}')
+
+# Analyze residuals (to check for patterns or biases)
+residuals_rf = y_test - y_pred_rf
+plt.scatter(y_pred_rf, residuals_rf)
+plt.xlabel('Predicted Values (Random Forest)')
+plt.ylabel('Residuals (Random Forest)')
+plt.title('Residual Plot (Random Forest)')
+plt.axhline(y=0, color='r', linestyle='--')
+plt.show()
+
+```
+
+```{python}
+# Make predictions on both training and testing sets
+y_train_pred = rf_model.predict(X_train)
+y_test_pred = rf_model.predict(X_test)
+
+# Calculate MSE and R-squared for in-sample (training set)
+mse_train = mean_squared_error(y_train, y_train_pred)
+r2_train = r2_score(y_train, y_train_pred)
+
+# Calculate MSE and R-squared for out-of-sample (testing set)
+mse_test = mean_squared_error(y_test, y_test_pred)
+r2_test = r2_score(y_test, y_test_pred)
+
+# Print the results
+print("In-sample MSE:", mse_train)
+print("In-sample R-squared:", r2_train)
+print("Out-of-sample MSE:", mse_test)
+print("Out-of-sample R-squared:", r2_test)
+```
+
+```{python}
+feature_importances = best_rf_model.feature_importances_
+feature_names = selected_features
+
+# Sort features by importance
+sorted_idx = np.argsort(feature_importances)
+feature_names_sorted = [feature_names[i] for i in sorted_idx]
+feature_importances_sorted = [feature_importances[i] for i in sorted_idx]
+
+# Create a bar plot of feature importances
+plt.barh(range(len(sorted_idx)), feature_importances_sorted, align='center')
+plt.yticks(range(len(sorted_idx)), feature_names_sorted)
+plt.xlabel("Feature Importance")
+plt.ylabel("Feature")
+plt.title("Feature Importance Plot")
+plt.show()
+```
+
+```{python}
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.ensemble import RandomForestRegressor
+
+# Define the hyperparameter grid
+param_grid = {
+    'n_estimators': [100, 200, 300],
+    'max_depth': [None, 10, 20, 30],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4],
+    'max_features': ['auto', 'sqrt', 'log2']
+}
+
+# Create the Random Forest Regressor model
+rf_model = RandomForestRegressor(random_state=42)
+
+# RandomizedSearchCV for hyperparameter tuning
+random_search = RandomizedSearchCV(
+    rf_model, param_distributions=param_grid, n_iter=100, cv=5, verbose=1, random_state=42, n_jobs=-1
+)
+
+# Fit the model to the data
+random_search.fit(X_train, y_train)
+
+# Get the best hyperparameters
+best_params = random_search.best_params_
+print("Best Hyperparameters:", best_params)
+
+```
+
+```{python}
+# Create a new Random Forest model with the best hyperparameters
+best_rf_model = RandomForestRegressor(
+    n_estimators=best_params['n_estimators'],
+    max_depth=best_params['max_depth'],
+    min_samples_split=best_params['min_samples_split'],
+    min_samples_leaf=best_params['min_samples_leaf'],
+    max_features=best_params['max_features'],
+    random_state=42
+)
+
+# Train the model on the selected features
+best_rf_model.fit(X_train[selected_features], y_train)
+```
+
+```{python}
+# Make predictions on both training and testing sets
+y_train_pred = best_rf_model.predict(X_train)
+y_test_pred = best_rf_model.predict(X_test)
+
+# Calculate MSE and R-squared for in-sample (training set)
+mse_train = mean_squared_error(y_train, y_train_pred)
+r2_train = r2_score(y_train, y_train_pred)
+
+# Calculate MSE and R-squared for out-of-sample (testing set)
+mse_test = mean_squared_error(y_test, y_test_pred)
+r2_test = r2_score(y_test, y_test_pred)
+
+# Print the results
+print("In-sample MSE:", mse_train)
+print("In-sample R-squared:", r2_train)
+print("Out-of-sample MSE:", mse_test)
+print("Out-of-sample R-squared:", r2_test)
+```

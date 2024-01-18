@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Loan Repayment Prediction</title>
+</head>
+<body>
+    <h2>Loan Repayment Prediction</h2>
+    <form action="/predict" method="post">
+        <input type="number" name="credit.policy" placeholder="Credit Policy" step="any" required><br>
+        <input type="number" name="int.rate" placeholder="Interest Rate" step="any" required><br>
+        <input type="number" name="installment" placeholder="Installment" step="any" required><br>
+        <input type="number" name="log.annual.inc" placeholder="Log of Annual Income" step="any" required><br>
+        <input type="number" name="dti" placeholder="Debt-to-Income Ratio" step="any" required><br>
+        <input type="number" name="fico" placeholder="FICO Score" step="any" required><br>
+        <input type="number" name="days.with.cr.line" placeholder="Days with Credit Line" step="any" required><br>
+        <input type="number" name="revol.bal" placeholder="Revolving Balance" step="any" required><br>
+        <input type="number" name="revol.util" placeholder="Revolving Utilization" step="any" required><br>
+        <input type="number" name="inq.last.6mths" placeholder="Inquiries Last 6 Months" step="any" required><br>
+        <input type="number" name="delinq.2yrs" placeholder="Delinquencies Last 2 Years" step="any" required><br>
+        <input type="number" name="pub.rec" placeholder="Public Records" step="any" required><br>
+        
+        <label>Purpose of the Loan:</label><br>
+        <input type="radio" id="credit_card" name="purpose" value="credit_card">
+        <label for="credit_card">Credit Card</label><br>
+        <input type="radio" id="debt_consolidation" name="purpose" value="debt_consolidation">
+        <label for="debt_consolidation">Debt Consolidation</label><br>
+        <input type="radio" id="educational" name="purpose" value="educational">
+        <label for="educational">Educational</label><br>
+        <input type="radio" id="home_improvement" name="purpose" value="home_improvement">
+        <label for="home_improvement">Home Improvement</label><br>
+        <input type="radio" id="major_purchase" name="purpose" value="major_purchase">
+        <label for="major_purchase">Major Purchase</label><br>
+        <input type="radio" id="small_business" name="purpose" value="small_business">
+        <label for="small_business">Small Business</label><br>
+        <input type="radio" id="all_other" name="purpose" value="all_other">
+        <label for="all_other">All Other</label><br>
+
+        <button type="submit">Predict</button>
+    </form>
+
+    {% if prediction_text %}
+        <h3>Prediction: {{ prediction_text }}</h3>
+    {% endif %}
+</body>
+</html>

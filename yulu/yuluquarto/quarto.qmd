@@ -1,0 +1,23 @@
+
+```{python}
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt
+import seaborn as sns
+import datetime as dt
+import scipy.stats as spy
+
+```
+
+
+```{python}
+
+df = pd.read_csv(r"https://d2beiqkhq929f0.cloudfront.net/public_assets/assets/000/001/428/original/bike_sharing.csv?1642089089")
+```
+
+### jdlksjfgsldfg
+
+```{python}
+
+df.isna().sum()
+```

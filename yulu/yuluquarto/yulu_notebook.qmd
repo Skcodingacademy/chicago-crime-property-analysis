@@ -1,0 +1,240 @@
+---
+title: "Assignment"
+format: 
+    html: 
+        code-fold: true
+jupyter: python3
+---
+
+Yulu is India's leading micro-mobility service provider, which offers unique vehicles for the daily commute. Starting off as a mission to eliminate traffic congestion in India, Yulu provides the safest commute solution through a user-friendly mobile app to enable shared, solo and sustainable commuting. Yulu zones are located at all the appropriate locations (including metro stations, bus stands, office spaces, residential areas, corporate offices, etc) to make those first and last miles smooth, affordable, and convenient.
+
+Yulu has recently suffered considerable dips in its revenues. They have contracted a consulting company to understand the factors on which the demand for these shared electric bicycles depends. Specifically, they want to understand the factors affecting the demand for these shared electric bicycles in the Indian market.
+
+The company wants to know:
+
+-   Which variables are significant in predicting the demand for shared electric bicycles in the Indian market?
+-   How well do those variables describe the electric bicycle demand.
+
+## Data Description
+
+The file `bike_sharing.csv` contains the usage data aggregated by the hour with the following columns:
+
+-   `datetime` - beginning of an hour for which the data are aggregated;
+-   `season`
+    -   1: spring,
+    -   2: summer,
+    -   3: fall,
+    -   4: winter;
+-   `holiday` - whether a day is a holiday or not
+-   `workingday` - if a day is neither weekend nor holiday is 1, otherwise is 0.
+-   `weather`
+    -   1: clear, few clouds, scattered clouds
+    -   2: mist + cloudy, mist + scattered clouds, mist + few clouds, mist
+    -   3: light snow, light rain + thunderstorm + scattered clouds, light rain + scattered clouds
+    -   4: heavy rain + ice pallets + thunderstorm + mist, snow + fog
+-   `temp` - air temperature in degrees Celsius
+-   `atemp` - feeling temperature in degrees Celsius
+-   `humidity` - air humidity in percent
+-   `windspeed` - wind speed in km/h
+-   `casual` - number of bikes rented by casual users
+-   `registered` - number of bikes rented by registered users
+-   `count` - total number of rented bikes including both casual and registered users
+
+## Practicalities
+
+Analyze the provided data and provide insights to the best of your abilities. Use statistical tests to support your claims. Include the relevant tables/graphs/visualization to explain what you have learned about the market. Make sure that the solution reflects your entire thought process including the preparation of data - it is more important how the code is structured rather than just the final result or plot.
+
+
+```{python}
+#| code-fold: false
+#| echo: false
+
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt
+import seaborn as sns
+import datetime as dt
+import scipy.stats as spy
+```
+
+```{python}
+#| code-fold: false
+#| echo: false
+
+df = pd.read_csv(r"https://d2beiqkhq929f0.cloudfront.net/public_assets/assets/000/001/428/original/bike_sharing.csv?1642089089")
+```
+
+```{python}
+print(df.shape)
+
+print(df.dtypes)
+
+# Check for missing data
+missing_data = df.isna().sum()
+print(missing_data)
+
+# Check for duplicate data
+duplicate_rows = df.duplicated().sum()
+print("Number of duplicate rows:", duplicate_rows)
+
+# Statistical Summaries
+statistics = df[['season', 'holiday', 'workingday', 'weather', 'temp', 'atemp', 'humidity', 'windspeed', 'casual', 'registered', 'count']].describe()
+
+print(statistics)
+
+
+```
+
+```{python}
+
+df.head(5)
+
+```
+
+
+```{python}
+# Check for outliers
+
+numeric_cols = df.select_dtypes(include=['number'])
+
+# Plot box plots for numeric variables
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=numeric_cols, orient='vertical', palette='Set1')
+plt.ylabel('Value')
+plt.title('Box Plots of Numeric Variables')
+plt.xticks(rotation=45)  # Rotate x-axis labels if needed
+plt.show()
+
+
+```
+
+```{python}
+
+selected_variables = ['casual', 'registered', 'count']
+
+# Create box plots for the selected variables with customized colors
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=df[selected_variables], orient='vertical', palette={'casual': 'grey', 'registered': 'red', 'count': 'blue'})
+plt.ylabel('Value')
+plt.title('Box Plots of Casual, Registered, and Count Variables')
+plt.xticks(rotation=45)  # Rotate x-axis labels if needed
+plt.show()
+
+# Percent of registered and casual users that make up the total count 
+
+percentage_registered = (df['registered'].sum() / df['count'].sum()) * 100
+
+# Calculate the percentage of casual users relative to the total count
+percentage_casual = (df['casual'].sum() / df['count'].sum()) * 100
+
+print(f"Percentage of Registered Users in Total Count: {percentage_registered:.2f}%")
+print(f"Percentage of Casual Users in Total Count: {percentage_casual:.2f}%")
+
+
+```
+
+```{python}
+# Convert to datetime data type
+df['datetime'] = pd.to_datetime(df['datetime'])
+
+min_datetime = df['datetime'].min()
+max_datetime = df['datetime'].max()
+
+print("Minimum Date and Time:", min_datetime)
+print("Maximum Date and Time:", max_datetime)
+
+# Extract year, month, day, and hour
+df['year'] = df['datetime'].dt.year
+df['month'] = df['datetime'].dt.month
+df['day'] = df['datetime'].dt.day
+df['hour'] = df['datetime'].dt.hour
+
+df.set_index('datetime', inplace=True)
+
+
+# Now, you have the 'year', 'month', 'day', and 'hour' columns in your DataFrame
+print(df[['year', 'month', 'day', 'hour']])
+
+```
+
+```{python}
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Find the minimum and maximum datetime values
+min_datetime = df.index.min()
+print(f"Min datetime: {min_datetime}")
+
+max_datetime = df.index.max()
+print(f"Max dateime: {max_datetime}")
+
+# Check the data type of the datetime index
+data_type = df.index.dtype
+print(f"Data type of datetime index: {data_type}")
+
+# Check for missing (NaN) date/time values
+missing_values = df.index.isnull().sum()
+print(f"Number of missing date/time values: {missing_values}")
+
+# Check for duplicate date/time values
+duplicate_values = df.index.duplicated().sum()
+print(f"Number of duplicate date/time values: {duplicate_values}")
+
+# Plot a histogram of datetime values
+plt.figure(figsize=(10, 6))
+plt.hist(df.index, bins=50, color='blue', alpha=0.7)
+plt.xlabel('Datetime')
+plt.ylabel('Frequency')
+plt.title('Histogram of Datetime Index Values')
+plt.show()
+
+
+```
+
+```{python}
+# Group data by month and calculate the average count of rented bikes for each month
+monthly_avg_counts = df.resample('M')['count'].mean()
+
+# Create a line plot to visualize monthly trends
+plt.figure(figsize=(12, 6))
+plt.plot(monthly_avg_counts.index, monthly_avg_counts, color='skyblue', label='Monthly Average Count')
+plt.title('Monthly Bike Usage Trends')
+plt.xlabel('Month')
+plt.ylabel('Average Count')
+plt.legend()
+plt.xticks(rotation=45)
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+# Filter data for the year 2011 and 2012 separately
+df_2011 = df[df['year'] == 2011]
+df_2012 = df[df['year'] == 2012]
+
+# Group data by month and calculate total counts for each year
+monthly_counts_2011 = df_2011.groupby('month')['count'].sum()
+monthly_counts_2012 = df_2012.groupby('month')['count'].sum()
+
+# Calculate the percent change between the same months in 2011 and 2012
+percent_change = ((monthly_counts_2012 - monthly_counts_2011) / monthly_counts_2011) * 100
+
+# Create a DataFrame to display the results
+comparison_df = pd.DataFrame({
+    'Month': percent_change.index,
+    'Percent Change': percent_change
+})
+
+# Plotting a line chart
+plt.figure(figsize=(10, 6))
+plt.plot(comparison_df['Month'], comparison_df['Percent Change'], marker='o', color='green', linestyle='-')
+plt.title('Percent Change in Bike Rentals (2012 vs. 2011)')
+plt.xlabel('Month')
+plt.ylabel('Percent Change')
+plt.xticks(comparison_df['Month'])
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.show()
+
+```
