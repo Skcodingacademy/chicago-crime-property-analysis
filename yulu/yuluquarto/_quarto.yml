@@ -1,8 +1,0 @@
-project:
-  title: "yuluquarto"
-execute:
-  echo: false
-jupyter: python3
-
-
-
