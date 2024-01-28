@@ -8,3 +8,5 @@ streamlit_folium
 branca
 geopandas
 streamlit_extras
+joblib
+scikit-learn

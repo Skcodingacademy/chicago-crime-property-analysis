@@ -11,12 +11,12 @@ Rashid Baset ([GitHub](https://github.com/rbaset5))\n
 """
 
 def logo():
-    add_logo("/app/resources/images/logo.png", height=250)
+    add_logo("./resources/images/logo.png", height=250)
 logo()
 
 st.sidebar.title("Developers")
 st.sidebar.info(developers_markdown)
-st.image("/resources/images/logo_notext.png")
+st.image("./resources/images/logo_notext.png")
 st.title("SafeHaven Analytics")
 st.subheader("A predictive model for housing analysis", divider="grey")
 
@@ -26,8 +26,8 @@ def load_data_head(filepath):
     df = pd.read_csv(filepath)
     df = df.head()
     return df
-df_house = load_data_head("/app/resources/data/HomeHarvest_Chicago.csv")
-df_crime = load_data_head("/app/resources/data/CrimeData_Chicago.csv")
+df_house = load_data_head("./resources/data/HomeHarvest_Chicago.csv")
+df_crime = load_data_head("./resources/data/CrimeData_Chicago.csv")
 
 intro_markdown = """
 Using publicly accessible data from the City of Chicago and Realtor.com (via HomeHarvest), we developed a machine learning model to demonstrate the relationships between neighborhoods, housing, and crime.
@@ -52,16 +52,16 @@ tab1, tab2, tab3, tab4 = st.tabs(["Violent Crime","Property Crime","Days on Mark
 
 with tab1:
     st.subheader("Violent crime by neighborhood")
-    st.image("/resources/images/violent_cloro.png")
+    st.image("./resources/images/violent_cloro.png")
     
 with tab2:
     st.subheader("Property crime by neighborhood")
-    st.image("/resources/images/property_cloro.png")
+    st.image("./resources/images/property_cloro.png")
 
 with tab3:
     st.subheader("Average days on market by neighborhood")
-    st.image("/resources/images/daysonmarket.png")
+    st.image("./resources/images/daysonmarket.png")
 
 with tab4:
     st.subheader("Change in crime rate by year (%) ")
-    st.image("/resources/images/crime_rate_year.png")
+    st.image("./resources/images/crime_rate_year.png")

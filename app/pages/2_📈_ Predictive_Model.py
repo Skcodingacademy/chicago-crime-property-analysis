@@ -12,20 +12,20 @@ Israel Dellinger ([GitHub](https://github.com/idellinger))\n
 Rashid Baset ([GitHub](https://github.com/rbaset5))\n
 """
 def logo():
-    add_logo("/app/resources/images/logo.png", height=250)
+    add_logo("./resources/images/logo.png", height=250)
 logo()
 
 st.sidebar.title("Developers")
 st.sidebar.info(developers_markdown)
-st.image("/resources/images/logo_notext.png")
+st.image("./resources/images/logo_notext.png")
 st.title("SafeHaven Analytics")
 
-model = joblib.load('app/ridge_modelfinaltest.sav','r')
+model = joblib.load('./ridge_modelfinaltest.sav','r')
 
 st.subheader("Ridge Model", divider = "grey")
 
-NB_file_path = '/app/neighborhoods.txt'
-year_built_file_path = '/app/year_built.txt'
+NB_file_path = './neighborhoods.txt'
+year_built_file_path = './year_built.txt'
 
 # Getting the neighborhood feature into a form that works as model input 
 neighborhoods = pd.read_csv(NB_file_path, header=None)

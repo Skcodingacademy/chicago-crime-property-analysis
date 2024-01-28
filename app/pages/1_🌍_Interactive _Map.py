@@ -14,18 +14,18 @@ Israel Dellinger ([GitHub](https://github.com/idellinger))\n
 Rashid Baset ([GitHub](https://github.com/rbaset5))\n
 """
 def logo():
-    add_logo("/app/resources/images/logo.png", height=250)
+    add_logo("./resources/images/logo.png", height=250)
 logo()
 
 st.sidebar.title("Developers")
 st.sidebar.info(developers_markdown)
-st.image("/resources/images/logo_notext.png")
+st.image("./resources/images/logo_notext.png")
 st.title("SafeHaven Analytics")
 
 
 st.subheader("Neighborhood Crime Map (2023 Data)", divider = "grey")
 
-crime_neighborhood_merge_path = ("/app/resources/data/crime_neighborhood_merge.geojson")
+crime_neighborhood_merge_path = ("./resources/data/crime_neighborhood_merge.geojson")
 crime_neighborhood_merge = gpd.read_file(crime_neighborhood_merge_path)
 
 crime_columns = ['Crimes Involving Children', 'Deceptive Practices and Fraud', 'Drug-Related Crimes',
@@ -82,7 +82,7 @@ colormap.add_to(m)
 col1, col2 = st.columns([3, 1])
 
 with col2:
-    st.image("/resources/images/logo.png")
+    st.image("./resources/images/logo.png")
     st.write("The map shows crime data from the year 2023 broken down by neighborhood and crime category (Violent, Property, Drug-Related, etc.)")
     with st.expander("2023 Crime Data"):
         st.dataframe(crime_neighborhood_2023_display)
