@@ -1,8 +1,0 @@
-Roadmap:
-    - Load times
-    - Pick and choose the model
-    - Data by year on map
-     
-
-
-
