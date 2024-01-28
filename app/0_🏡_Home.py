@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from streamlit_extras.app_logo import add_logo
 
-st.set_page_config(page_title="Home - SafeHaven", layout = "wide", page_icon = "🏡", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Home - SafeHaven", layout = "wide", page_icon = "🏡", initial_sidebar_state="expanded")
 
 developers_markdown = """
 Seth Kulow ([GitHub](https://github.com/Skcodingacademy))\n
